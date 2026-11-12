@@ -164,6 +164,16 @@ export const ACCESSORIES = {
 };
 export const TITLES = ['Vô địch', 'Á quân', 'Hạng ba'];
 
+// Nhạc nền bạn tự chọn. Bỏ file nhạc (.mp3 hoặc .ogg) vào thư mục assets/music, rồi ghi đúng tên file vào đây.
+// menu = trong gara, race = lúc đua, win = bục vinh danh. Mỗi màn ghi được nhiều bài, hết bài sẽ tự chuyển bài kế.
+// Màn nào để trống [] thì game phát nhạc tự tạo.
+// Ví dụ: race: ['nhac-dua-1.mp3', 'nhac-dua-2.mp3'],
+export const MUSIC = {
+  menu: [],
+  race: [],
+  win: [],
+};
+
 export const START_MONEY = 1000;
 export const SELL_RATE = 0.5;
 

@@ -20,7 +20,14 @@
   <div id="ui">
     <header id="top">
       <div class="logo">ĐỘ XE <b>ĐUA GIẢI</b></div>
-      <div id="money"></div>
+      <div class="top-right">
+        <div class="music-ctrl">
+          <button id="music-btn" title="Bật / tắt nhạc nền">♪ Nhạc: bật</button>
+          <button id="music-next" title="Bài kế tiếp" hidden>⏭</button>
+          <input id="music-vol" type="range" min="0" max="100" value="50" title="Âm lượng nhạc nền">
+        </div>
+        <div id="money"></div>
+      </div>
     </header>
     <aside id="panel">
       <nav id="tabs">
@@ -95,6 +102,7 @@
         <button id="p-gear"></button>
         <button id="p-assist"></button>
         <button id="p-sound"></button>
+        <button id="p-music"></button>
         <button id="p-quit">Về gara</button>
       </div>
     </div>

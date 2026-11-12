@@ -39,6 +39,11 @@ button.primary:hover:not(:disabled) { background: #ff8f3d; }
 .logo { font-weight: 800; letter-spacing: 1px; font-size: 18px; }
 .logo b { color: var(--accent); }
 #money { font-weight: 700; font-size: 17px; color: #ffd166; }
+.top-right { display: flex; align-items: center; gap: 14px; }
+.music-ctrl { display: flex; align-items: center; gap: 6px; pointer-events: auto; }
+.music-ctrl button { padding: 5px 10px; font-size: 13px; background: rgba(42, 47, 59, 0.85); }
+#music-vol { width: 80px; accent-color: var(--accent); }
+@media (max-width: 760px) { #music-vol { display: none; } .logo { font-size: 15px; } }
 
 #panel {
   position: fixed; top: 52px; right: 0; bottom: 0; width: 420px; max-width: 100%;

@@ -3,13 +3,14 @@ import * as THREE from 'three';
 import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
 import {
   CARS, PARTS, CLASSES, COLORS, AI_NAMES, START_MONEY, SELL_RATE, MISSIONS, DAILY,
-  KITS, GLOW_PRICE, GLOW_COLORS, TEXT_COLORS, SKINS, HAIRS, SUITS, PATTERNS, ACCESSORIES, TITLES,
+  MUSIC, KITS, GLOW_PRICE, GLOW_COLORS, TEXT_COLORS, SKINS, HAIRS, SUITS, PATTERNS, ACCESSORIES, TITLES,
   getCar, emptyParts, calcStats, totalLevel, aiStats, missionProgress,
 } from './data.js';
 import { makeCar, loadCars } from './car.js';
 import { makeCharacter } from './character.js';
 import { Race, TRACKS, MAX_HITS } from './race.js';
 import { EngineSound } from './sound.js';
+import { Music } from './music.js';
 
 const $ = (id) => document.getElementById(id);
 const money = (n) => n.toLocaleString('vi-VN') + ' $';
@@ -178,6 +179,28 @@ function getRace(id) {
 }
 let race = getRace(save.track);
 const engine = new EngineSound();
+
+// ---------- Nhạc nền và tiếng cơ khí trong gara ----------
+const music = new Music(MUSIC);
+// Đang phát bài bạn chọn thì hiện tên bài và nút chuyển bài
+music.onTrack = (name) => {
+  $('music-btn').title = name ? `Đang phát: ${name}` : 'Bật / tắt nhạc nền';
+  $('music-next').hidden = !name || (MUSIC[music.style] || []).length < 2;
+};
+$('music-next').addEventListener('click', () => music.nextTrack());
+music.on = save.music ? save.music.on : true;
+music.vol = save.music ? save.music.vol : 0.5;
+function musicLabels() {
+  $('music-btn').textContent = `♪ Nhạc: ${music.on ? 'bật' : 'tắt'}`;
+  $('music-vol').value = Math.round(music.vol * 100);
+}
+function saveMusic() { save.music = { on: music.on, vol: music.vol }; persist(); }
+function toggleMusic() { music.toggle(); saveMusic(); musicLabels(); }
+$('music-btn').addEventListener('click', toggleMusic);
+$('music-vol').addEventListener('input', (e) => { music.setVolume(e.target.value / 100); saveMusic(); });
+// Trình duyệt chỉ cho phát tiếng sau lần bấm hoặc gõ phím đầu tiên
+for (const ev of ['pointerdown', 'keydown']) window.addEventListener(ev, () => music.start(), { once: true });
+musicLabels();
 
 // Đặt máy quay gara theo màn hình đang hiện và đẩy cảnh sang phần không bị bảng che
 function applyView() {
@@ -383,6 +406,7 @@ function renderGuide() {
       <li><b>1 2 3 4 5</b>: gài số, khi chọn hộp số tay. Hộp số mini ở góc dưới bên trái cho biết đang ở số nào.</li>
       <li><b>R</b>: đưa xe về giữa đường khi bị kẹt</li>
       <li><b>Esc</b> hoặc <b>P</b>: tạm dừng, mở menu</li>
+      <li>Nút <b>♪ Nhạc</b> ở góc trên bật tắt nhạc nền, thanh trượt bên cạnh chỉnh âm lượng. Trong lúc đua thì bật tắt ở menu tạm dừng.</li>
       <li>Các phím mũi tên vẫn dùng được thay cho W A S D.</li>
       <li>Điện thoại: dùng các nút tròn hiện trên màn hình</li>
     </ul>
@@ -466,6 +490,7 @@ $('content').addEventListener('click', (e) => {
   const b = e.target.closest('button[data-act]');
   if (!b || b.disabled) return;
   const id = b.dataset.id, c = cur(), parts = c.parts;
+  let sound = ''; // tiếng phát ra sau thao tác: 'upgrade', 'sell', 'paint', 'buy'
   switch (b.dataset.act) {
     // Tạo nhân vật
     case 'drv-skin': draft.skin = id; break;
@@ -493,6 +518,7 @@ $('content').addEventListener('click', (e) => {
       save.money -= car.price;
       save.owned[id] = { parts: emptyParts(), color: COLORS[0] };
       save.carId = id;
+      sound = 'buy';
       break;
     }
     case 'buy-part': {
@@ -501,6 +527,7 @@ $('content').addEventListener('click', (e) => {
       save.money -= next.price;
       parts[id] = (parts[id] || 0) + 1;
       save.stats.partsBought = (save.stats.partsBought || 0) + 1;
+      sound = 'upgrade';
       break;
     }
     case 'sell-part': {
@@ -508,23 +535,26 @@ $('content').addEventListener('click', (e) => {
       if (lv < 1) return;
       save.money += Math.floor(PARTS.find(p => p.id === id).levels[lv].price * SELL_RATE);
       parts[id] = lv - 1;
+      sound = 'sell';
       break;
     }
     // Custom
-    case 'color': c.color = id; break;
+    case 'color': c.color = id; sound = 'paint'; break;
     case 'text-color': c.textColor = id; break;
     case 'buy-glow':
       if (save.money < GLOW_PRICE) return;
       save.money -= GLOW_PRICE; c.glowOwned = true; c.glow = GLOW_COLORS[0];
+      sound = 'upgrade';
       break;
     case 'glow': c.glow = id; break;
     case 'buy-kit': {
       const k = Number(id);
       if (save.money < KITS[k].price) return;
       save.money -= KITS[k].price; c.kitOwned = Math.max(c.kitOwned || 0, k); c.kit = k;
+      sound = 'upgrade';
       break;
     }
-    case 'kit': c.kit = Number(id); break;
+    case 'kit': c.kit = Number(id); sound = 'upgrade'; break;
     // Giải đua, nhiệm vụ
     case 'track': save.track = id; break;
     case 'assist': save.assist = !save.assist; break;
@@ -546,6 +576,7 @@ $('content').addEventListener('click', (e) => {
     case 'race': startRace(id); return;
   }
   persist();
+  if (sound) music.sfx(sound); // tiếng cơ khí khi độ xe, tiếng xịt sơn khi đổi màu
   refreshGarage();
   // Giữ nguyên chữ đang gõ dở trong ô tên khi bấm chọn màu ở màn tạo nhân vật
   if (mode === 'creator' && $('drv-name')) draft.name = $('drv-name').value;
@@ -629,6 +660,7 @@ function startRace(classId) {
   }, (res) => onFinish(cls, res));
   buildMinimap();
   engine.start();
+  music.setStyle('race');
 }
 
 function onFinish(cls, res) {
@@ -667,6 +699,7 @@ function showPodium(cls, res, prize, record) {
     return { name: s.name, look: lookOf(s.name), suit: r ? r.color : '#888888', out: s.out };
   });
   mode = 'podium';
+  music.setStyle('win');
   $('hud').hidden = true; $('touch').hidden = true;
   buildPodium(racers.filter(r => !r.out));
   applyView();
@@ -690,6 +723,8 @@ function showPodium(cls, res, prize, record) {
 }
 
 function backToGarage() {
+  music.setStyle('menu');
+  music.duck(false);
   race.stop();
   engine.stop();
   mode = 'garage';
@@ -709,14 +744,17 @@ function pauseLabels() {
   $('p-gear').textContent = `Hộp số: ${save.manual ? 'số tay' : 'tự động'}`;
   $('p-assist').textContent = `Trợ lái: ${save.assist ? 'bật' : 'tắt'}`;
   $('p-sound').textContent = `Tiếng máy: ${engine.on ? 'bật' : 'tắt'}`;
+  $('p-music').textContent = `Nhạc nền: ${music.on ? 'bật' : 'tắt'}`;
 }
 function setPaused(on) {
   if (mode !== 'race' || !$('result').hidden) return;
   paused = on;
   for (const k in input) input[k] = k === 'gear' ? 0 : false;
   $('pause').hidden = !on;
+  music.duck(on);
   if (on) { engine.stop(); pauseLabels(); }
 }
+$('p-music').addEventListener('click', () => { toggleMusic(); pauseLabels(); });
 $('h-pause').addEventListener('click', () => setPaused(true));
 $('p-resume').addEventListener('click', () => setPaused(false));
 $('p-restart').addEventListener('click', () => startRace(lastClass));
@@ -873,5 +911,5 @@ try {
 if (!save.driver) openCreator();
 else { refreshGarage(); render(); }
 // Cửa nhỏ để thử nghiệm từ bảng điều khiển của trình duyệt (F12): gõ game.race, game.save
-window.game = { save, get race() { return race; } };
+window.game = { save, music, get race() { return race; } };
 requestAnimationFrame(frame);

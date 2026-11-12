@@ -1,0 +1,5 @@
+Bỏ file nhạc (.mp3 hoặc .ogg) vào thư mục này,
+rồi ghi tên file vào mục MUSIC trong js/data.js.
+
+Lưu ý: kho GitHub đang công khai, nên chỉ dùng nhạc bạn có quyền chia sẻ
+(nhạc tự sáng tác, hoặc nhạc miễn phí bản quyền như YouTube Audio Library, Pixabay Music).
