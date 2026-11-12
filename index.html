@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <title>Độ Xe Đua Giải</title>
+  <link rel="stylesheet" href="style.css">
+  <!-- Three.js (thư viện vẽ 3D) tải thẳng từ mạng, không cần cài đặt -->
+  <script type="importmap">
+    { "imports": {
+      "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+    } }
+  </script>
+</head>
+<body>
+  <canvas id="c"></canvas>
+
+  <!-- Màn hình gara -->
+  <div id="ui">
+    <header id="top">
+      <div class="logo">ĐỘ XE <b>ĐUA GIẢI</b></div>
+      <div id="money"></div>
+    </header>
+    <aside id="panel">
+      <nav id="tabs">
+        <button data-tab="gara">Gara</button>
+        <button data-tab="tiem">Tiệm đồ</button>
+        <button data-tab="custom">Custom</button>
+        <button data-tab="giai">Giải đua</button>
+        <button data-tab="nhiemvu" id="tab-nv">Nhiệm vụ</button>
+        <button data-tab="huongdan">Hướng dẫn</button>
+      </nav>
+      <div id="content"></div>
+    </aside>
+  </div>
+
+  <!-- Màn hình đang đua -->
+  <div id="hud" hidden>
+    <div class="hud-left">
+      <div><span id="h-pos"></span><small id="h-total"></small></div>
+      <div class="hud-small">Vòng <span id="h-lap"></span></div>
+      <div class="hud-small" id="h-time"></div>
+      <div class="hud-small" id="h-hits"></div>
+    </div>
+    <div class="hud-right">
+      <div class="gearbox"><span id="h-gear">D1</span><div class="meter"><i id="h-rpm"></i></div></div>
+      <span id="h-kmh">0</span><small>km/h</small>
+      <div class="nitro"><span>NITRO</span><div class="meter"><i id="h-nitro"></i></div></div>
+    </div>
+    <div id="h-count"></div>
+    <div id="h-msg"></div>
+    <div id="h-off" hidden>RA KHỎI ĐƯỜNG ĐUA</div>
+    <div id="h-auto" hidden>TRỢ LÁI ĐANG PHANH</div>
+    <div class="hud-top">
+      <button id="h-gearmode"></button>
+      <button id="h-pause">❚❚ Tạm dừng</button>
+    </div>
+    <!-- Hộp số mini: chỉ hiện khi chạy số tay, cần số nằm ở số đang gài -->
+    <div id="h-shifter" hidden>
+      <div class="gate">
+        <i data-g="1">1</i><i data-g="3">3</i><i data-g="5">5</i>
+        <i data-g="2">2</i><i data-g="4">4</i><i class="off">·</i>
+      </div>
+      <small>Bấm phím 1-5 để gài số</small>
+    </div>
+    <canvas id="h-map" width="170" height="170"></canvas>
+    <div id="h-help">A D đánh lái · W ga · S phanh · M nitro · G đổi số tay/tự động · 1-5 gài số · R về giữa đường · Esc tạm dừng</div>
+  </div>
+
+  <!-- Nút bấm cho điện thoại -->
+  <div id="touch" hidden>
+    <div class="t-group">
+      <button data-key="left">◀</button>
+      <button data-key="right">▶</button>
+      <div id="t-gears" class="t-col" hidden>
+        <button data-shift="1" class="t-small">Số +</button>
+        <button data-shift="-1" class="t-small">Số −</button>
+      </div>
+    </div>
+    <div class="t-group">
+      <button data-key="boost" class="t-nitro">NITRO</button>
+      <button data-key="brake" class="t-brake">PHANH</button>
+      <button data-key="gas" class="t-gas">GA</button>
+    </div>
+  </div>
+
+  <!-- Menu tạm dừng -->
+  <div id="pause" class="overlay" hidden>
+    <div class="card">
+      <h2>Tạm dừng</h2>
+      <div class="menu">
+        <button id="p-resume" class="primary">Tiếp tục</button>
+        <button id="p-restart">Đua lại từ đầu</button>
+        <button id="p-gear"></button>
+        <button id="p-assist"></button>
+        <button id="p-sound"></button>
+        <button id="p-quit">Về gara</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bảng kết quả, hiện dưới bục vinh danh -->
+  <div id="result" hidden>
+    <div class="card">
+      <h2 id="r-title"></h2>
+      <div id="r-body"></div>
+      <div class="row">
+        <button id="r-again">Đua lại</button>
+        <button id="r-back" class="primary">Về gara</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
