@@ -223,12 +223,27 @@ export class Music {
   hat(t, gain) { this.noiseHit(t, 7000, gain, 0.045); }
 
   // ---------- Hiệu ứng âm thanh trong gara ----------
-  // kind: 'upgrade' (gắn đồ độ: cờ lê vặn ốc rồi siết "cạch"), 'paint' (xịt sơn), 'sell' (tháo đồ), 'buy' (mua xe)
-  sfx(kind) {
+  // kind: 'click' (bấm nút), 'coin' (nhận tiền; count = số đồng xu kêu liên tiếp),
+  //       'upgrade' (gắn đồ độ: cờ lê vặn ốc rồi siết "cạch"), 'paint' (xịt sơn), 'sell' (tháo đồ), 'buy' (mua xe)
+  sfx(kind, count = 1) {
     if (!this.init()) return;
     this.ctx.resume();
     const t = this.ctx.currentTime + 0.02;
-    if (kind === 'upgrade') {
+    if (kind === 'click') {
+      // Tiếng "tích" ngắn, nhẹ
+      this.blip('sine', 1400, 900, t, 0.05, 0.18);
+    } else if (kind === 'coin') {
+      // Tiếng đồng xu kiểu game: hai nốt nhảy lên, mỗi đồng cách nhau một chút; đồng cuối thêm tiếng ngân
+      const n = Math.min(count, 6);
+      for (let k = 0; k < n; k++) {
+        const s = t + k * 0.11;
+        this.blip('square', 988, 988, s, 0.07, 0.09);
+        this.blip('square', 1319, 1319, s + 0.07, 0.22, 0.09);
+      }
+      const end = t + (n - 1) * 0.11 + 0.08;
+      this.click(end, 6000, 0.25);
+      for (const f of [2637, 3520]) this.blip('triangle', f, f, end, 0.6, 0.05);
+    } else if (kind === 'upgrade') {
       // Tiếng cóc cờ lê: chuỗi tiếng tách nhỏ, nhanh dần
       for (let k = 0; k < 7; k++) this.click(t + k * 0.055 - k * k * 0.0015, 3200 + k * 120, 0.5);
       // Siết chặt: tiếng kim loại va mạnh, ngân ra
@@ -246,6 +261,18 @@ export class Music {
       this.clang(t + 0.05, 0.35);
       this.hiss(t + 0.1, 0.4, 0.15);
     }
+  }
+
+  // Một nốt hiệu ứng: cao độ trượt từ f0 tới f1, tắt dần trong dur giây
+  blip(type, f0, f1, t, dur, gain) {
+    const c = this.ctx, o = c.createOscillator(), g = c.createGain();
+    o.type = type;
+    o.frequency.setValueAtTime(f0, t);
+    if (f1 !== f0) o.frequency.exponentialRampToValueAtTime(f1, t + dur);
+    g.gain.setValueAtTime(gain, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+    o.connect(g); g.connect(this.fx);
+    o.start(t); o.stop(t + dur + 0.02);
   }
 
   // Tiếng tách ngắn (bánh cóc, lẫy khóa)

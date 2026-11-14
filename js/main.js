@@ -490,7 +490,7 @@ $('content').addEventListener('click', (e) => {
   const b = e.target.closest('button[data-act]');
   if (!b || b.disabled) return;
   const id = b.dataset.id, c = cur(), parts = c.parts;
-  let sound = ''; // tiếng phát ra sau thao tác: 'upgrade', 'sell', 'paint', 'buy'
+  let sound = '', coins = 1; // tiếng phát ra sau thao tác: 'upgrade', 'sell', 'paint', 'buy', 'coin'; coins = số đồng xu kêu
   switch (b.dataset.act) {
     // Tạo nhân vật
     case 'drv-skin': draft.skin = id; break;
@@ -564,6 +564,7 @@ $('content').addEventListener('click', (e) => {
       if (!m || !m.done || m.claimed) return;
       save.money += m.reward;
       if (id === DAILY.id) daily().claimed = true; else save.claimed[id] = true;
+      sound = 'coin';
       break;
     }
     case 'claim-all':
@@ -571,12 +572,15 @@ $('content').addEventListener('click', (e) => {
         if (!m.done || m.claimed) continue;
         save.money += m.reward;
         if (m.id === DAILY.id) daily().claimed = true; else save.claimed[m.id] = true;
+        coins++;
       }
+      sound = 'coin';
       break;
     case 'race': startRace(id); return;
   }
   persist();
-  if (sound) music.sfx(sound); // tiếng cơ khí khi độ xe, tiếng xịt sơn khi đổi màu
+  // Tiếng riêng cho từng thao tác: cơ khí khi độ xe, xịt sơn khi đổi màu, tiền khi nhận thưởng
+  if (sound) music.sfx(sound, sound === 'coin' ? Math.max(1, coins - 1) : 1);
   refreshGarage();
   // Giữ nguyên chữ đang gõ dở trong ô tên khi bấm chọn màu ở màn tạo nhân vật
   if (mode === 'creator' && $('drv-name')) draft.name = $('drv-name').value;
@@ -720,7 +724,17 @@ function showPodium(cls, res, prize, record) {
       Chạm tường <b>${res.wallHits}</b> · Tông xe khác <b>${res.crashes}</b></p>
     ${ready ? `<p class="small"><b>Có ${ready} nhiệm vụ chờ nhận thưởng</b> trong tab Nhiệm vụ.</p>` : ''}`;
   $('result').hidden = false;
+  if (prize > 0) music.sfx('coin', res.rank <= 3 ? 4 - res.rank : 1); // vô địch 3 đồng, á quân 2, hạng ba 1
 }
+
+// Tiếng "tích" khi bấm bất kỳ nút nào. Nút đã có tiếng riêng (độ xe, đổi màu, nhận thưởng...)
+// và nút ga phanh trên điện thoại thì không kêu thêm.
+const OWN_SOUND = new Set(['buy-car', 'buy-part', 'sell-part', 'color', 'buy-glow', 'buy-kit', 'kit', 'claim', 'claim-all']);
+document.addEventListener('click', (e) => {
+  const b = e.target.closest('button');
+  if (!b || b.disabled || b.closest('#touch') || OWN_SOUND.has(b.dataset.act)) return;
+  music.sfx('click');
+});
 
 function backToGarage() {
   music.setStyle('menu');
