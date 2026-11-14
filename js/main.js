@@ -204,7 +204,7 @@ musicLabels();
 
 // Đặt máy quay gara theo màn hình đang hiện và đẩy cảnh sang phần không bị bảng che
 function applyView() {
-  const w = window.innerWidth, h = window.innerHeight, wide = w > 760;
+  const w = window.innerWidth, h = window.innerHeight, wide = w > 760 || w > h; // màn hình rộng hoặc điện thoại nằm ngang: bảng điều khiển ở bên phải
   if (mode === 'podium') {
     garageCam.position.set(0, 2.4, 9.4); garageCam.lookAt(0, 1.7, 0); garageCam.fov = wide ? 40 : 62;
     // Màn hình rộng: bảng kết quả nằm bên phải, bục bên trái. Màn hình hẹp: bảng nằm dưới, bục ở trên.
@@ -636,6 +636,7 @@ function fmtTime(t) {
 }
 
 function startRace(classId) {
+  goLandscape(); // phải gọi ngay lúc người chơi bấm nút thì trình duyệt mới cho
   const cls = CLASSES.find(c => c.id === classId);
   lastClass = classId;
   const shuffle = (a) => [...a].sort(() => Math.random() - 0.5);
@@ -665,6 +666,8 @@ function startRace(classId) {
   buildMinimap();
   engine.start();
   music.setStyle('race');
+  pausedByRotate = false;
+  checkRotate();
 }
 
 function onFinish(cls, res) {
@@ -744,6 +747,8 @@ function backToGarage() {
   mode = 'garage';
   paused = false;
   $('ui').hidden = false; $('hud').hidden = true; $('touch').hidden = true; $('result').hidden = true; $('pause').hidden = true;
+  pausedByRotate = false;
+  $('rotate').hidden = true;
   applyView();
   refreshGarage();
   render();
@@ -786,7 +791,7 @@ $('p-assist').addEventListener('click', () => {
 });
 // Đổi giữa số tay và số tự động: nút trên màn hình đua, phím G, hoặc menu tạm dừng
 function gearLabels() {
-  $('h-gearmode').textContent = `Hộp số: ${save.manual ? 'SỐ TAY' : 'TỰ ĐỘNG'} (G)`;
+  $('h-gearmode').textContent = `Hộp số: ${save.manual ? 'SỐ TAY' : 'TỰ ĐỘNG'}${isTouch ? '' : ' (G)'}`;
   $('h-shifter').hidden = !save.manual;
   $('t-gears').hidden = !save.manual;
   pauseLabels();
@@ -806,6 +811,31 @@ window.addEventListener('keydown', (e) => {
 });
 // Chuyển sang cửa sổ khác thì tự tạm dừng
 document.addEventListener('visibilitychange', () => { if (document.hidden) setPaused(true); });
+
+// ---------- Điện thoại: chơi màn hình ngang ----------
+// Android: bật toàn màn hình rồi khóa xoay ngang (trình duyệt chỉ cho khóa khi đang toàn màn hình).
+// iPhone không cho khóa: nếu đang cầm dọc thì hiện hình nhắc xoay ngang và tạm dừng cuộc đua.
+const portrait = window.matchMedia('(orientation: portrait)');
+let pausedByRotate = false;
+
+function goLandscape() {
+  if (!isTouch) return;
+  const el = document.documentElement;
+  const lock = () => screen.orientation && screen.orientation.lock && screen.orientation.lock('landscape').catch(() => {});
+  try {
+    if (!document.fullscreenElement && el.requestFullscreen) el.requestFullscreen({ navigationUI: 'hide' }).then(lock, () => {});
+    else lock();
+  } catch { /* trình duyệt không hỗ trợ: dựa vào hình nhắc xoay ngang */ }
+}
+
+function checkRotate() {
+  const show = isTouch && portrait.matches && mode === 'race';
+  $('rotate').hidden = !show;
+  if (show && !paused && $('result').hidden) { setPaused(true); pausedByRotate = true; }
+  // Xoay ngang lại thì chạy tiếp, nếu lúc nãy dừng là do cầm dọc
+  if (!show && pausedByRotate) { pausedByRotate = false; setPaused(false); }
+}
+portrait.addEventListener('change', checkRotate);
 
 // ---------- Bản đồ nhỏ ----------
 const mapCv = $('h-map'), mapCtx = mapCv.getContext('2d');
